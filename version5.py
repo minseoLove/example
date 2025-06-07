@@ -1,11 +1,18 @@
 import streamlit as st
-import requests
-import json
-from bs4 import BeautifulSoup
 import urllib.parse
-import re
-from datetime import datetime
 import pandas as pd
+from datetime import datetime
+
+# 선택적 import (없어도 작동하도록)
+try:
+    import requests
+    from bs4 import BeautifulSoup
+    import json
+    import re
+    EXTERNAL_LIBS_AVAILABLE = True
+except ImportError:
+    EXTERNAL_LIBS_AVAILABLE = False
+    st.warning("일부 외부 라이브러리가 설치되지 않아 YouTube 검색 기능이 제한됩니다. 기본 기능은 정상 작동합니다.")
 
 # ✅ 페이지 설정
 st.set_page_config(
@@ -347,8 +354,11 @@ def get_topic_data(topic):
     }
     return data.get(topic, {})
 
-# ✅ 유튜브 검색 함수
+# ✅ 유튜브 검색 함수 (라이브러리 의존성 해결)
 def get_youtube_video_info(query):
+    if not EXTERNAL_LIBS_AVAILABLE:
+        return None
+    
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         search_query = urllib.parse.quote(query)
@@ -503,17 +513,23 @@ if st.session_state.current_category:
             
             with col2:
                 st.markdown("### 🎥 관련 영상")
-                try:
-                    with st.spinner("영상 검색 중..."):
-                        youtube_info = get_youtube_video_info(f"{current_topic} {selected_sub}")
-                        if youtube_info and youtube_info["videoId"]:
-                            st.image(youtube_info["thumbnail"], width=200)
-                            st.markdown(f"**{youtube_info['title'][:50]}...**")
-                            st.markdown(f'<a href="https://www.youtube.com/watch?v={youtube_info["videoId"]}" class="resource-link" target="_blank">YouTube에서 보기</a>', unsafe_allow_html=True)
-                        else:
-                            st.info("관련 영상을 찾을 수 없습니다.")
-                except Exception as e:
-                    st.info("영상 검색 서비스가 일시적으로 이용할 수 없습니다.")
+                if EXTERNAL_LIBS_AVAILABLE:
+                    try:
+                        with st.spinner("영상 검색 중..."):
+                            youtube_info = get_youtube_video_info(f"{current_topic} {selected_sub}")
+                            if youtube_info and youtube_info["videoId"]:
+                                st.image(youtube_info["thumbnail"], width=200)
+                                st.markdown(f"**{youtube_info['title'][:50]}...**")
+                                st.markdown(f'<a href="https://www.youtube.com/watch?v={youtube_info["videoId"]}" class="resource-link" target="_blank">YouTube에서 보기</a>', unsafe_allow_html=True)
+                            else:
+                                st.info("관련 영상을 찾을 수 없습니다.")
+                    except Exception as e:
+                        st.info("영상 검색 서비스가 일시적으로 이용할 수 없습니다.")
+                else:
+                    # 외부 라이브러리가 없을 때 대체 링크 제공
+                    search_query = urllib.parse.quote(f"{current_topic} {selected_sub}")
+                    youtube_url = f"https://www.youtube.com/results?search_query={search_query}"
+                    st.markdown(f'<a href="{youtube_url}" class="resource-link" target="_blank">YouTube에서 검색하기</a>', unsafe_allow_html=True)
 
 else:
     # 기본 홈 화면
