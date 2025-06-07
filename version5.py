@@ -1,4 +1,13 @@
 import streamlit as st
+
+# ✅ 페이지 설정 (반드시 가장 첫 번째 streamlit 명령어)
+st.set_page_config(
+    page_title="청년 실생활 정보 가이드", 
+    page_icon="🌟",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 import urllib.parse
 import pandas as pd
 from datetime import datetime
@@ -13,14 +22,6 @@ try:
 except ImportError:
     EXTERNAL_LIBS_AVAILABLE = False
     st.warning("일부 외부 라이브러리가 설치되지 않아 YouTube 검색 기능이 제한됩니다. 기본 기능은 정상 작동합니다.")
-
-# ✅ 페이지 설정
-st.set_page_config(
-    page_title="청년 실생활 정보 가이드", 
-    page_icon="🌟",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
 
 # ✅ CSS 스타일링 (서울청년 사이트 스타일 참고)
 st.markdown("""
