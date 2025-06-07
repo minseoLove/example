@@ -695,17 +695,16 @@ if st.session_state.current_category:
                 st.markdown("---")
                 st.subheader(safe_translate("📄 계약서 예시/양식 보기"))
                 
-                # 외부 PDF 링크 (2025년 PDF)
-                pdf_url = "https://inpyeonglaw.com/wp-content/uploads/2025/03/%EA%B0%9C%EC%A0%95-%ED%91%9C%EC%A4%80%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%992025%EB%85%84-%EB%B0%B0%ED%8F%AC.pdf"
-                st.markdown(f"[📄 표준 근로계약서 PDF 열기]({pdf_url})")
+                # 외부 PDF 링크 (고용노동부 표준 근로계약서)
+                pdf_url = "https://www.moel.go.kr/policy/policydata/view.do?bbs_seq=20190300329"
+                st.markdown(f"[📄 표준 근로계약서 다운로드]({pdf_url})")
                 
-                # 법무부 예시 이미지 및 링크
-                try:
-                    st.image("https://viewer.moj.go.kr/images/sub/skin/skinDoc_01.gif", caption="법무부 계약서 예시 이미지")
-                except:
-                    st.info("계약서 예시 이미지를 불러올 수 없습니다.")
-                st.markdown("[👉 법무부 계약서 전체 보기](https://viewer.moj.go.kr/skin/doc.html?rs=/result/bbs/118&fn=temp_1681802272120100)")
-            
+                # 법무부 예시 링크
+                st.markdown("[👉 법무부 계약서 가이드](https://www.moj.go.kr)")
+                
+                # 계약서 작성 가이드
+                st.info("💡 근로계약서 작성시 임금, 근로시간, 휴일, 업무내용을 반드시 명시하세요.")
+                
             # 부동산 관련 공식 정보 및 뉴스 추가 (원본 코드 기능)
             if current_topic == "부동산":
                 st.markdown("---")
