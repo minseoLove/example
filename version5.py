@@ -1,4 +1,159 @@
-import streamlit as st
+# ✅ 선택된 카테고리 내용 표시
+if st.session_state.current_category:
+    current_topic = st.session_state.current_category
+    topic_data = get_enhanced_topic_data(current_topic)
+    
+    st.markdown(f"""
+    <div class="content-card">
+        <h2 style="color: #2a5298; margin-bottom: 1rem;">📋 {current_topic} 정보</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if topic_data:
+        # 세부 항목 선택
+        sub_topics = list(topic_data.keys())
+        selected_sub = st.selectbox("🔍 세부 정보를 선택하세요", sub_topics, key="sub_topic")
+        
+        if selected_sub:
+            item = topic_data[selected_sub]
+            
+            # 메인 정보 표시 (한글/영문 키 모두 지원)
+            content_text = item.get("content", item.get("내용", "정보 없음"))
+            st.markdown(f"""
+            <div class="info-section">
+                <h3 style="color: #2a5298; margin-bottom: 1rem;">💡 {selected_sub}</h3>
+                <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;">{safe_translate(content_text)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 추가 정보들을 탭으로 구성
+            tab_names = ["📚 상세정보"]
+            if any(key in item for key in ["checklist", "체크리스트", "documents", "필요서류", "tips", "관리방법", "benefits", "혜택"]):
+                tab_names.append("✅ 체크리스트")
+            if any(key in item for key in ["source", "출처"]):
+                tab_names.append("🔗 관련 자료")
+            
+            tabs = st.tabs(tab_names)
+            
+            with tabs[0]:  # 상세정보
+                if "law" in item or "관련법" in item:
+                    law_info = item.get("law", item.get("관련법", ""))
+                    st.info(f"📜 관련 법령: {law_info}")
+                if "methods" in item or "신고방법" in item:
+                    methods = item.get("methods", item.get("신고방법", []))
+                    st.markdown("#### 📞 신고 방법")
+                    for method in methods:
+                        st.markdown(f"- {method}")
+                if "factors" in item or "고려사항" in item:
+                    factors = item.get("factors", item.get("고려사항", []))
+                    st.markdown("#### 🤔 고려사항")
+                    for factor in factors:
+                        st.markdown(f"- {factor}")
+                if "savings_pros" in item or "적금장점" in item:
+                    savings_pros = item.get("savings_pros", item.get("적금장점", []))
+                    fund_pros = item.get("fund_pros", item.get("펀드장점", []))
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.success("**💰 적금 장점**")
+                        for pro in savings_pros:
+                            st.markdown(f"- {pro}")
+                    with col2:
+                        st.info("**📈 펀드 장점**")
+                        for pro in fund_pros:
+                            st.markdown(f"- {pro}")
+            
+            if len(tabs) > 1:  # 체크리스트 탭
+                with tabs[1]:
+                    if "checklist" in item or "체크리스트" in item:
+                        checklist = item.get("checklist", item.get("체크리스트", []))
+                        st.markdown("#### ✅ 필수 확인사항")
+                        for check in checklist:
+                            st.checkbox(check, key=f"check_{check}")
+                    if "documents" in item or "필요서류" in item:
+                        documents = item.get("documents", item.get("필요서류", []))
+                        st.markdown("#### 📋 필요서류")
+                        for doc in documents:
+                            st.markdown(f"- {doc}")
+                    if "tips" in item or "관리방법" in item:
+                        tips = item.get("tips", item.get("관리방법", []))
+                        st.markdown("#### 💡 관리 팁")
+                        for tip in tips:
+                            st.markdown(f"- {tip}")
+                    if "benefits" in item or "혜택" in item:
+                        benefits = item.get("benefits", item.get("혜택", []))
+                        st.markdown("#### 🎁 혜택")
+                        for benefit in benefits:
+                            st.markdown(f"- {benefit}")
+                    if "sites" in item or "확인사이트" in item:
+                        sites = item.get("sites", item.get("확인사이트", []))
+                        st.markdown("#### 🌐 확인 사이트")
+                        for site in sites:
+                            st.markdown(f"- {site}")
+                    if "products" in item or "상품종류" in item:
+                        products = item.get("products", item.get("상품종류", []))
+                        st.markdown("#### 🏦 상품 종류")
+                        for product in products:
+                            st.markdown(f"- {product}")
+                    if "must_include" in item or "필수포함사항" in item:
+                        must_include = item.get("must_include", item.get("필수포함사항", []))
+                        st.markdown("#### 📝 필수 포함사항")
+                        for req in must_include:
+                            st.markdown(f"- {req}")
+                    if "cautions" in item or "주의사항" in item:
+                        cautions = item.get("cautions", item.get("주의사항", []))
+                        st.markdown("#### ⚠️ 주의사항")
+                        for caution in cautions:
+                            st.markdown(f"- {caution}")
+            
+            if len(tabs) > 2:  # 관련 자료 탭
+                with tabs[2]:
+                    source_info = item.get("source", item.get("출처", ""))
+                    if source_info:
+                        st.markdown(f"**📍 정보 제공:** {source_info}")
+                    
+                    # 관련 링크들
+                    links = {
+                        "취업/아르바이트": [
+                            ("고용노동부", "https://www.moel.go.kr"),
+                            ("근로복지공단", "https://www.comwel.or.kr"),
+                            ("잡코리아", "https://www.jobkorea.co.kr")
+                        ],
+                        "아르바이트": [
+                            ("고용노동부", "https://www.moel.go.kr"),
+                            ("근로복지공단", "https://www.comwel.or.kr"),
+                            ("알바몬", "https://www.albamon.com")
+                        ],
+                        "부동산": [
+                            ("청약홈", "https://www.applyhome.co.kr"),
+                            ("국토교통부", "https://www.molit.go.kr"),
+                            ("주택도시보증공사", "https://www.hug.co.kr")
+                        ],
+                        "금융": [
+                            ("금융감독원", "https://www.fss.or.kr"),
+                            ("한국은행", "https://www.bok.or.kr"),
+                            ("신용회복위원회", "https://www.ccrs.or.kr")
+                        ],
+                        "계약서": [
+                            ("법무부", "https://www.moj.go.kr"),
+                            ("소비자24", "https://www.consumer.go.kr"),
+                            ("법제처", "https://www.moleg.go.kr")
+                        ]
+                    }
+                    
+                    if current_topic in links:
+                        st.markdown("#### 🔗 관련 사이트")
+                        link_cols = st.columns(len(links[current_topic]))
+                        for i, (name, url) in enumerate(links[current_topic]):
+                            with link_cols[i]:
+                                st.markdown(f'<a href="{url}" class="resource-link" target="_blank">{name}</a>', unsafe_allow_html=True)
+            
+            # 계약서 및 아르바이트 관련 양식 표시 (원본 코드 기능)
+            if current_topic in ["계약서", "아르바이트", "취업/아르바이트"]:
+                st.markdown("---")
+                st.subheader(safe_translate("📄 계약서 예시/양식 보기"))
+                
+                # 외부 PDF 링크 (2025년 PDF)
+                pdf_url = "https://inpyeonglaw.com/wp-content/uploads/2025/03/%EA%Bimport streamlit as st
 
 # ✅ 페이지 설정 (반드시 가장 첫 번째 streamlit 명령어)
 st.set_page_config(
@@ -12,6 +167,13 @@ import urllib.parse
 import pandas as pd
 from datetime import datetime
 
+# utils.helper 모듈 import (없으면 기본 데이터 사용)
+try:
+    from utils.helper import get_topic_data
+    HELPER_AVAILABLE = True
+except ImportError:
+    HELPER_AVAILABLE = False
+
 # 선택적 import (없어도 작동하도록)
 try:
     import requests
@@ -21,7 +183,8 @@ try:
     EXTERNAL_LIBS_AVAILABLE = True
 except ImportError:
     EXTERNAL_LIBS_AVAILABLE = False
-    st.warning("일부 외부 라이브러리가 설치되지 않아 YouTube 검색 기능이 제한됩니다. 기본 기능은 정상 작동합니다.")
+
+# 외부 라이브러리 경고는 나중에 표시
 
 # ✅ CSS 스타일링 (서울청년 사이트 스타일 참고)
 st.markdown("""
@@ -256,6 +419,13 @@ st.markdown("""
 st.markdown('<div class="nav-container">', unsafe_allow_html=True)
 st.markdown("### 🎯 원하는 정보를 선택하세요")
 
+# 상태 경고 메시지 (페이지 설정 이후에 표시)
+if not EXTERNAL_LIBS_AVAILABLE:
+    st.info("💡 일부 외부 라이브러리가 없어 YouTube 검색 기능이 제한됩니다. 기본 정보 제공은 정상 작동합니다.")
+
+if not HELPER_AVAILABLE:
+    st.info("💡 utils.helper 모듈을 찾을 수 없어 기본 데이터를 사용합니다.")
+
 # 카테고리 그리드
 col1, col2, col3, col4 = st.columns(4)
 
@@ -277,6 +447,10 @@ with col4:
     if st.button("📄\n계약서", key="contract"):
         selected_category = "계약서"
 
+# 아르바이트 버튼 추가 (원래 코드 호환성)
+if st.button("🧑‍💼 아르바이트", key="arbeit"):
+    selected_category = "아르바이트"
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ✅ 세션 상태로 카테고리 관리
@@ -286,9 +460,34 @@ if "current_category" not in st.session_state:
 if selected_category:
     st.session_state.current_category = selected_category
 
-# ✅ 토픽 데이터
-def get_topic_data(topic):
+# ✅ 토픽 데이터 (utils.helper 또는 기본 데이터 사용)
+def get_enhanced_topic_data(topic):
+    # utils.helper가 있으면 사용, 없으면 기본 데이터 사용
+    if HELPER_AVAILABLE:
+        try:
+            return get_topic_data(topic)
+        except:
+            pass
+    
+    # 기본 데이터 (fallback)
     data = {
+        "아르바이트": {
+            "근로계약서 작성법": {
+                "내용": "근로계약서는 근로자와 사용자 간의 약속을 명시한 중요한 문서입니다. 임금, 근로시간, 휴일, 업무내용을 반드시 확인하세요.",
+                "체크리스트": ["임금 명시", "근로시간 확인", "4대보험 가입", "퇴직금 규정"],
+                "출처": "고용노동부"
+            },
+            "최저임금 정보": {
+                "내용": "2024년 최저임금은 시간당 9,860원입니다. 주휴수당, 야간수당 등도 꼼꼼히 확인하세요.",
+                "관련법": "최저임금법",
+                "출처": "최저임금위원회"
+            },
+            "알바 권리보호": {
+                "내용": "부당한 대우를 받았을 때는 고용노동부 신고센터(1350)로 신고할 수 있습니다.",
+                "신고방법": ["전화: 1350", "온라인 신고", "노동청 방문"],
+                "출처": "고용노동부"
+            }
+        },
         "취업/아르바이트": {
             "근로계약서 작성법": {
                 "content": "근로계약서는 근로자와 사용자 간의 약속을 명시한 중요한 문서입니다. 임금, 근로시간, 휴일, 업무내용을 반드시 확인하세요.",
@@ -308,16 +507,25 @@ def get_topic_data(topic):
         },
         "부동산": {
             "전세보증금 보호": {
+                "내용": "전세보증금반환보증보험을 통해 전세금을 보호받을 수 있습니다. HUG, SGI서울보증 등에서 가입 가능합니다.",
+                "필요서류": ["임대차계약서", "등기부등본", "신분증"],
+                "출처": "주택도시보증공사",
                 "content": "전세보증금반환보증보험을 통해 전세금을 보호받을 수 있습니다. HUG, SGI서울보증 등에서 가입 가능합니다.",
                 "documents": ["임대차계약서", "등기부등본", "신분증"],
                 "source": "주택도시보증공사"
             },
             "청약통장 관리": {
+                "내용": "청약통장은 주택청약종합저축으로 통합되었습니다. 매월 2만원~50만원 납입 가능합니다.",
+                "혜택": ["소득공제 240만원", "주택청약 자격", "높은 이자율"],
+                "출처": "청약홈",
                 "content": "청약통장은 주택청약종합저축으로 통합되었습니다. 매월 2만원~50만원 납입 가능합니다.",
                 "benefits": ["소득공제 240만원", "주택청약 자격", "높은 이자율"],
                 "source": "청약홈"
             },
             "월세 vs 전세": {
+                "내용": "현재 금리 상황에서는 전세보다 월세가 유리할 수 있습니다. 개인 상황에 맞게 선택하세요.",
+                "고려사항": ["금리 동향", "목돈 여유", "거주 기간", "세제 혜택"],
+                "출처": "국토교통부",
                 "content": "현재 금리 상황에서는 전세보다 월세가 유리할 수 있습니다. 개인 상황에 맞게 선택하세요.",
                 "factors": ["금리 동향", "목돈 여유", "거주 기간", "세제 혜택"],
                 "source": "국토교통부"
@@ -325,16 +533,25 @@ def get_topic_data(topic):
         },
         "금융": {
             "신용점수 관리": {
+                "내용": "신용점수는 대출, 카드발급에 중요한 요소입니다. 정기적으로 확인하고 관리하세요.",
+                "관리방법": ["연체 방지", "다양한 금융거래", "신용정보 오류 정정"],
+                "확인사이트": ["올크레딧", "크레딧뷰", "마이크레딧"],
                 "content": "신용점수는 대출, 카드발급에 중요한 요소입니다. 정기적으로 확인하고 관리하세요.",
                 "tips": ["연체 방지", "다양한 금융거래", "신용정보 오류 정정"],
                 "sites": ["올크레딧", "크레딧뷰", "마이크레딧"]
             },
             "적금 vs 펀드": {
+                "내용": "안전성을 원한다면 적금, 수익성을 원한다면 펀드를 고려하세요. 포트폴리오 분산이 중요합니다.",
+                "적금장점": ["원금보장", "예금자보호", "안정성"],
+                "펀드장점": ["높은 수익 가능성", "분산투자", "전문가 운용"],
                 "content": "안전성을 원한다면 적금, 수익성을 원한다면 펀드를 고려하세요. 포트폴리오 분산이 중요합니다.",
                 "savings_pros": ["원금보장", "예금자보호", "안정성"],
                 "fund_pros": ["높은 수익 가능성", "분산투자", "전문가 운용"]
             },
             "청년 대출 상품": {
+                "내용": "청년들을 위한 다양한 대출 상품이 있습니다. 금리와 조건을 꼼꼼히 비교하세요.",
+                "상품종류": ["청년 버팀목 대출", "청년 전세대출", "학자금 대출"],
+                "출처": "주택도시기금",
                 "content": "청년들을 위한 다양한 대출 상품이 있습니다. 금리와 조건을 꼼꼼히 비교하세요.",
                 "products": ["청년 버팀목 대출", "청년 전세대출", "학자금 대출"],
                 "source": "주택도시기금"
@@ -342,11 +559,17 @@ def get_topic_data(topic):
         },
         "계약서": {
             "근로계약서": {
+                "내용": "근로조건을 명확히 하는 필수 문서입니다. 반드시 서면으로 작성하세요.",
+                "필수포함사항": ["임금", "근로시간", "업무내용", "근무장소"],
+                "출처": "고용노동부",
                 "content": "근로조건을 명확히 하는 필수 문서입니다. 반드시 서면으로 작성하세요.",
                 "must_include": ["임금", "근로시간", "업무내용", "근무장소"],
                 "source": "고용노동부"
             },
             "임대차계약서": {
+                "내용": "주택 임대차 시 작성하는 계약서입니다. 특약사항을 꼼꼼히 확인하세요.",
+                "주의사항": ["보증금 반환", "임대료 인상", "계약 갱신", "수리 책임"],
+                "출처": "국토교통부",
                 "content": "주택 임대차 시 작성하는 계약서입니다. 특약사항을 꼼꼼히 확인하세요.",
                 "cautions": ["보증금 반환", "임대료 인상", "계약 갱신", "수리 책임"],
                 "source": "국토교통부"
@@ -467,41 +690,36 @@ if st.session_state.current_category:
                         for benefit in item["benefits"]:
                             st.markdown(f"- {benefit}")
             
-            if len(tabs) > 2:  # 관련 자료 탭
-                with tabs[2]:
-                    if "source" in item:
-                        st.markdown(f"**📍 정보 제공:** {item['source']}")
-                    
-                    # 관련 링크들
-                    links = {
-                        "취업/아르바이트": [
-                            ("고용노동부", "https://www.moel.go.kr"),
-                            ("근로복지공단", "https://www.comwel.or.kr"),
-                            ("잡코리아", "https://www.jobkorea.co.kr")
-                        ],
-                        "부동산": [
-                            ("청약홈", "https://www.applyhome.co.kr"),
-                            ("국토교통부", "https://www.molit.go.kr"),
-                            ("주택도시보증공사", "https://www.hug.co.kr")
-                        ],
-                        "금융": [
-                            ("금융감독원", "https://www.fss.or.kr"),
-                            ("한국은행", "https://www.bok.or.kr"),
-                            ("신용회복위원회", "https://www.ccrs.or.kr")
-                        ],
-                        "계약서": [
-                            ("법무부", "https://www.moj.go.kr"),
-                            ("소비자24", "https://www.consumer.go.kr"),
-                            ("법제처", "https://www.moleg.go.kr")
-                        ]
-                    }
-                    
-                    if current_topic in links:
-                        st.markdown("#### 🔗 관련 사이트")
-                        link_cols = st.columns(len(links[current_topic]))
-                        for i, (name, url) in enumerate(links[current_topic]):
-                            with link_cols[i]:
-                                st.markdown(f'<a href="{url}" class="resource-link" target="_blank">{name}</a>', unsafe_allow_html=True)
+            # 계약서 및 아르바이트 관련 양식 표시 (원본 코드 기능)
+            if current_topic in ["계약서", "아르바이트", "취업/아르바이트"]:
+                st.markdown("---")
+                st.subheader(safe_translate("📄 계약서 예시/양식 보기"))
+                
+                # 외부 PDF 링크 (2025년 PDF)
+                pdf_url = "https://inpyeonglaw.com/wp-content/uploads/2025/03/%EA%B0%9C%EC%A0%95-%ED%91%9C%EC%A4%80%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%992025%EB%85%84-%EB%B0%B0%ED%8F%AC.pdf"
+                st.markdown(f"[📄 표준 근로계약서 PDF 열기]({pdf_url})")
+                
+                # 법무부 예시 이미지 및 링크
+                try:
+                    st.image("https://viewer.moj.go.kr/images/sub/skin/skinDoc_01.gif", caption="법무부 계약서 예시 이미지")
+                except:
+                    st.info("계약서 예시 이미지를 불러올 수 없습니다.")
+                st.markdown("[👉 법무부 계약서 전체 보기](https://viewer.moj.go.kr/skin/doc.html?rs=/result/bbs/118&fn=temp_1681802272120100)")
+            
+            # 부동산 관련 공식 정보 및 뉴스 추가 (원본 코드 기능)
+            if current_topic == "부동산":
+                st.markdown("---")
+                st.subheader(safe_translate("🏠 관련 공식 사이트 안내"))
+                st.markdown(f"- [{safe_translate('청약홈 (LH 공사)')}](https://www.applyhome.co.kr)")
+                st.markdown(f"- [{safe_translate('부동산 계약 절차 가이드 - 국토교통부')}](https://www.molit.go.kr)")
+                st.markdown(f"- [{safe_translate('주택도시기금 - 버팀목 대출')}](https://nhuf.molit.go.kr)")
+                st.info(safe_translate("청약 신청, 임대차 보호법, 대출 상품 등을 제공하는 공식 사이트입니다. 꼭 참고하세요."))
+                
+                # 부동산 뉴스 (집값 + 정책)
+                st.markdown("---")
+                st.subheader(safe_translate("📰 부동산 관련 뉴스 보기"))
+                st.markdown("[📈 집값 관련 뉴스 보기](https://search.naver.com/search.naver?where=news&query=집값)")
+                st.markdown("[🏛️ 부동산 정책 관련 뉴스 보기](https://search.naver.com/search.naver?where=news&query=부동산+정책)")
             
             # 관련 뉴스 및 영상
             st.markdown("---")
@@ -570,7 +788,7 @@ else:
     })
     st.dataframe(updates, use_container_width=True, hide_index=True)
 
-# ✅ 피드백 섹션
+# ✅ 사용자 피드백 (원본 코드와 동일)
 st.markdown("---")
 st.markdown("""
 <div class="content-card">
@@ -578,16 +796,17 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-feedback_type = st.selectbox("피드백 유형", ["건의사항", "오류신고", "정보요청", "기타"])
-feedback_text = st.text_area("내용을 입력해주세요", height=100, placeholder="개선사항이나 추가하고 싶은 정보가 있다면 알려주세요!")
+st.info(safe_translate("원하는 정보가 부족하다면 아래에 의견을 남겨주세요!"))
+feedback_type = st.selectbox(safe_translate("피드백 유형"), [safe_translate("건의사항"), safe_translate("오류신고"), safe_translate("정보요청"), safe_translate("기타")])
+feedback_text = st.text_area(safe_translate("내용을 입력해주세요"), height=100, placeholder=safe_translate("궁금한 점이나 요청하고 싶은 내용을 적어주세요"))
 
 col1, col2 = st.columns([1, 4])
 with col1:
-    if st.button("📤 제출", type="primary"):
+    if st.button(safe_translate("📤 제출"), type="primary"):
         if feedback_text.strip():
-            st.success("소중한 의견 감사합니다! 검토 후 반영하겠습니다.")
+            st.success(safe_translate("소중한 의견 감사합니다! 빠른 시일 내 반영하겠습니다."))
         else:
-            st.error("내용을 입력해주세요.")
+            st.error(safe_translate("내용을 입력해주세요."))
 
 # ✅ 푸터
 st.markdown("""
